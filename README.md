@@ -26,7 +26,7 @@ pip install streamlit statsmodels numpy
 Run the application:
 
 ```bash
-streamlit run ab_test_power_analysis.py
+streamlit run script.py
 ```
 
 ## Input Parameters
