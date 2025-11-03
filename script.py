@@ -1,150 +1,102 @@
 import streamlit as st
 import numpy as np
-from statsmodels.stats.proportion import proportion_effectsize
-from statsmodels.stats.power import zt_ind_solve_power
+from scipy import stats
 
-# Page configuration
-st.set_page_config(page_title="A/B Test Power Analysis", layout="wide")
+st.set_page_config(page_title="A/B Test Power Analysis (Pooled)", layout="wide")
 
-# Title and introduction
-st.title("A/B Test Power Analysis Calculator")
-st.markdown("""
-This tool helps you determine the optimal sample size for your A/B tests. 
-Input your current KPI performance and the minimum effect you want to detect, 
-and this tool will calculate the required audience size for each variant.
-""")
+st.title("A/B Test Power Analysis Calculator — Pooled formula (Optimizely-style)")
 
-# Create two columns for input
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Input Parameters")
-    
-    # KPI Base input
     kpi_base = st.number_input(
-        "Current KPI (Conversion Rate)",
-        min_value=0.01,
-        max_value=100.0,
-        value=12.0,
-        step=0.1,
-        help="Enter your current conversion rate as a percentage (e.g., 12 for 12%)"
+        "Current KPI (Conversion Rate) %", min_value=0.001, max_value=100.0,
+        value=12.0, step=0.1, help="Baseline conversion rate as a percentage (e.g. 12 for 12%)."
     )
-    
-    # Convert to decimal
-    kpi_base_decimal = kpi_base / 100
-    
-    # MDE input
     mde = st.number_input(
-        "Minimum Detectable Effect (MDE) %",
-        min_value=1.0,
-        max_value=100.0,
-        value=16.0,
-        step=0.5,
-        help="The percentage increase you want to be able to detect (e.g., 16 for a 16% relative increase)"
+        "Minimum Detectable Effect (MDE) % (relative)",
+        min_value=0.1, max_value=500.0, value=16.0, step=0.1,
+        help="Relative percent increase you want to detect (e.g. 16 for +16%)."
     )
-    
-    # Convert to decimal
-    mde_decimal = mde / 100
 
 with col2:
-    st.subheader("Fixed Parameters")
-    st.metric("Statistical Power", "80%", help="Probability of detecting an effect when it exists")
-    st.metric("Significance Level (α)", "5%", help="Probability of false positive (Type I error)")
-    st.metric("Test Type", "Two-tailed", help="Tests for differences in both directions")
+    st.subheader("Statistical Settings")
+    alpha_percent = st.number_input("Significance level (α) %", min_value=0.1, max_value=20.0, value=5.0, step=0.1)
+    power_percent = st.number_input("Power (1 - β) %", min_value=50.0, max_value=99.9, value=80.0, step=1.0)
+    test_type = st.selectbox("Test type", ["Two-tailed (default)", "One-tailed"])
 
-# Calculate the expected KPI after the effect
-kpi_variant = kpi_base_decimal + (kpi_base_decimal * mde_decimal)
+# convert to decimals
+p1 = kpi_base / 100.0
+mde_decimal = mde / 100.0
+p2 = p1 * (1 + mde_decimal)
+delta = abs(p2 - p1)
 
-# Display the calculation
+alpha = alpha_percent / 100.0
+power = power_percent / 100.0
+
 st.markdown("---")
-st.subheader("Expected Results")
+st.subheader("Inputs / Expected")
+c1, c2, c3 = st.columns(3)
+c1.metric("Control rate (p1)", f"{p1:.4f}", f"{kpi_base:.2f}%")
+c2.metric("Variant rate (p2)", f"{p2:.4f}", f"{p2*100:.2f}%")
+c3.metric("Absolute lift (pp)", f"{(p2-p1)*100:.3f}pp", f"{mde:.3f}% relative")
 
-col3, col4, col5 = st.columns(3)
+# function using pooled formula
+def pooled_sample_size(p1, p2, alpha, power, tails="two"):
+    # choose z critical depending on tails
+    if tails == "two":
+        z_alpha = stats.norm.ppf(1 - alpha / 2.0)
+    else:
+        z_alpha = stats.norm.ppf(1 - alpha)  # one-tailed
+    z_beta = stats.norm.ppf(power)
+    pbar = (p1 + p2) / 2.0
+    delta = abs(p2 - p1)
+    # Optimizely / AB-testguide style pooled formula:
+    # n_per_group = 2 * (z_alpha + z_beta)^2 * pbar * (1 - pbar) / delta^2
+    n = 2.0 * (z_alpha + z_beta) ** 2 * pbar * (1 - pbar) / (delta ** 2)
+    return int(np.ceil(n))
 
-with col3:
-    st.metric("Control Group Rate", f"{kpi_base_decimal:.4f}", f"{kpi_base:.2f}%")
+# compute both
+n_two = pooled_sample_size(p1, p2, alpha, power, tails="two")
+n_one = pooled_sample_size(p1, p2, alpha, power, tails="one")
 
-with col4:
-    st.metric("Expected Variant Rate", f"{kpi_variant:.4f}", f"{kpi_variant*100:.2f}%")
-
-with col5:
-    absolute_lift = (kpi_variant - kpi_base_decimal) * 100
-    st.metric("Absolute Lift", f"{absolute_lift:.2f}pp", f"+{mde:.1f}% relative")
-
-# Calculate effect size
-effect_size = proportion_effectsize(kpi_base_decimal, kpi_variant)
-
-# Calculate sample size per group
-try:
-    sample_size_per_group = zt_ind_solve_power(
-        effect_size=effect_size,
-        alpha=0.05,  # Significance level
-        power=0.8,   # Statistical power
-        ratio=1.0,   # Equal sample sizes
-        alternative='two-sided'
-    )
-    
-    # Round up to nearest integer
-    sample_size_per_group = int(np.ceil(sample_size_per_group))
-    total_sample_size = sample_size_per_group * 2
-    
-    # Display results
-    st.markdown("---")
-    st.subheader("Required Sample Size")
-    
-    result_col1, result_col2, result_col3 = st.columns(3)
-    
-    with result_col1:
-        st.metric("Per Variant", f"{sample_size_per_group:,}", help="Sample size needed for each group (Control and Variant)")
-    
-    with result_col2:
-        st.metric("Total Sample Size", f"{total_sample_size:,}", help="Combined sample size for both groups")
-    
-    with result_col3:
-        st.metric("Effect Size (Cohen's h)", f"{effect_size:.4f}", help="Standardized measure of the difference")
-    
-    # Additional information
-    st.markdown("---")
-    st.subheader("Test Summary")
-    
-    st.info(f"""
-    **Test Configuration:**
-    - **Control Group:** {sample_size_per_group:,} visitors at {kpi_base:.2f}% conversion rate
-    - **Variant Group:** {sample_size_per_group:,} visitors at expected {kpi_variant*100:.2f}% conversion rate
-    - **Total Audience Required:** {total_sample_size:,} visitors
-    - **Confidence Level:** 95% (α = 0.05)
-    - **Statistical Power:** 80% (β = 0.20)
-    
-    With this sample size, there is an 80% chance of detecting a {mde:.1f}% relative increase 
-    (from {kpi_base:.2f}% to {kpi_variant*100:.2f}%) if it truly exists, with 95% confidence.
-    """)
-    
-    # Calculation notes
-    with st.expander("Calculation Logic"):
-        st.markdown(f"""
-        **Step-by-step calculation:**
-        
-        1. **Base KPI (p₁):** {kpi_base_decimal:.4f} ({kpi_base:.2f}%)
-        
-        2. **Minimum Detectable Effect:** {mde:.1f}%
-        
-        3. **Expected Variant KPI (p₂):** 
-           - Formula: p₂ = p₁ + (p₁ × MDE)
-           - Calculation: {kpi_base_decimal:.4f} + ({kpi_base_decimal:.4f} × {mde_decimal:.4f}) = {kpi_variant:.4f}
-        
-        4. **Effect Size (Cohen's h):** {effect_size:.4f}
-           - This standardizes the difference between proportions
-        
-        5. **Sample Size Calculation:**
-           - Using the effect size, power (0.8), and significance level (0.05)
-           - Statistical test: Two-proportion z-test (two-tailed)
-           - Result: {sample_size_per_group:,} per group, {total_sample_size:,} total
-        """)
-
-except Exception as e:
-    st.error(f"Error calculating sample size: {str(e)}")
-    st.info("Please check your input parameters and try again.")
-
-# Footer
 st.markdown("---")
-st.caption("For more accurate results, use the daily average KPI from the past 3-6 months. Consider the magnitude of each change when estimating MDE (small CTA changes might need 5-15%, major redesigns could use 20-30%).")
+st.subheader("Required sample size (pooled formula)")
+
+res_col1, res_col2 = st.columns(2)
+res_col1.metric("Two-tailed (α/2)", f"{n_two:,}", help=f"Two-tailed α={alpha_percent}% power={power_percent}%")
+res_col2.metric("One-tailed (α)", f"{n_one:,}", help=f"One-tailed α={alpha_percent}% power={power_percent}%")
+
+# show the chosen option result
+chosen = "two" if test_type.startswith("Two") else "one"
+n_chosen = n_two if chosen == "two" else n_one
+st.markdown("---")
+st.subheader("Selected result")
+st.write(f"Using **{test_type}** with α={alpha_percent}% and power={power_percent}% → **{n_chosen:,} per variant** ({n_chosen*2:,} total)")
+
+# effect size (Cohen's h)
+effect_size_h = 2 * (np.arcsin(np.sqrt(p2)) - np.arcsin(np.sqrt(p1)))
+st.markdown(f"**Effect size (Cohen's h):** {effect_size_h:.4f}")
+
+with st.expander("Calculation details (formulas)"):
+    st.markdown(f"""
+- p₁ = {p1:.6f}
+- p₂ = {p2:.6f}
+- Δ = |p₂ - p₁| = {delta:.6f}
+- pooled p̄ = (p₁ + p₂)/2 = {(p1+p2)/2:.6f}
+
+**Pooled formula used (per-group):**
+
+n = 2 × (Z_crit + Z_β)² × p̄ (1 − p̄) / Δ²
+
+Where:
+- Z_crit = Z_{1-α/2} (two-tailed) or Z_{1-α} (one-tailed)
+- Z_β = Z_{power}
+
+Examples with current inputs:
+- Two-tailed → Z_crit = {stats.norm.ppf(1 - alpha/2):.6f}, Z_β = {stats.norm.ppf(power):.6f} → n = {n_two:,}
+- One-tailed → Z_crit = {stats.norm.ppf(1 - alpha):.6f}, Z_β = {stats.norm.ppf(power):.6f} → n = {n_one:,}
+""")
+
+st.caption("Note: Many commercial calculators (including some Optimizely settings) use one-tailed tests by default — that is likely why your screenshot shows ≈3,800 per variation. Two-tailed tests are slightly more conservative and here give ≈4,804 for the same inputs.")
