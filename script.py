@@ -4,7 +4,7 @@ from scipy import stats
 
 st.set_page_config(page_title="A/B Test Power Analysis (Pooled)", layout="wide")
 
-st.title("A/B Test Power Analysis Calculator — Pooled formula (Optimizely-style)")
+st.title("A/B Test Power Analysis Calculator")
 
 col1, col2 = st.columns(2)
 
@@ -91,12 +91,10 @@ with st.expander("Calculation details (formulas)"):
 n = 2 × (Z_crit + Z_β)² × p̄ (1 − p̄) / Δ²
 
 Where:
-- Z_crit = Z_{1-α/2} (two-tailed) or Z_{1-α} (one-tailed)
+- Z_crit = Z_1-α/2 (two-tailed) or Z_1-α (one-tailed)
 - Z_β = Z_{power}
 
 Examples with current inputs:
 - Two-tailed → Z_crit = {stats.norm.ppf(1 - alpha/2):.6f}, Z_β = {stats.norm.ppf(power):.6f} → n = {n_two:,}
 - One-tailed → Z_crit = {stats.norm.ppf(1 - alpha):.6f}, Z_β = {stats.norm.ppf(power):.6f} → n = {n_one:,}
 """)
-
-st.caption("Note: Many commercial calculators (including some Optimizely settings) use one-tailed tests by default — that is likely why your screenshot shows ≈3,800 per variation. Two-tailed tests are slightly more conservative and here give ≈4,804 for the same inputs.")
