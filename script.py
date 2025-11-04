@@ -5,53 +5,33 @@ from scipy import stats
 st.set_page_config(page_title="A/B Test Power Analysis (Pooled)", layout="wide")
 st.title("A/B Test Power Analysis Calculator")
 
-# Custom CSS for color-coding sections
-st.markdown("""
-<style>
-.green-box {
-    background-color: #e6ffe6;
-    border-left: 5px solid #00cc00;
-    padding: 10px;
-    border-radius: 10px;
-}
-.red-box {
-    background-color: #ffe6e6;
-    border-left: 5px solid #ff0000;
-    padding: 10px;
-    border-radius: 10px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([1,1])
 
 with col1:
     st.subheader("🟩 Input Parameters")
     kpi_base = st.number_input(
         "Current Base KPI (Example Conversion Rate) %",
-        min_value=0.001, max_value=100.0,
+        min_value=0.01, max_value=100.0,
         value=12.0, step=0.1,
-        help="Baseline conversion rate as a percentage (e.g. 12 for 12%)."
     )
     mde = st.number_input(
         "Expected Increase - Minimum Detectable Effect (MDE) %",
-        min_value=0.1, max_value=500.0, value=16.0, step=0.1,
-        help="Relative percent increase you want to detect (e.g. 16 for +16%)."
+        min_value=0.01, max_value=500.0, value=16.0, step=0.1,
     )
     c1, c2 = st.columns(2)
-    c1.metric("Control rate", f"{kpi_base:.2f}%")
-    c2.metric("Variant rate", f"{(kpi_base/100 * (1+mde/100))*100:.2f}%")
+    c1.metric("Base KPI", f"{kpi_base:.2f}%")
+    c2.metric("Expected KPI", f"{(kpi_base/100 * (1+mde/100))*100:.2f}%")
 
 with col2:
     with st.expander("🔴 Statistical Settings", expanded=False):
-        st.markdown("These settings have been applied as a default, they are not intended to be changed")
+        st.markdown("These settings have been applied as a default, check with the data for any changes")
         
         alpha_percent = st.number_input(
             "Significance level %",
             min_value=0.1, max_value=20.0, value=5.0, step=0.1
         )
         power_percent = st.number_input(
-            "Power",
+            "Power %",
             min_value=50.0, max_value=99.9, value=80.0, step=1.0
         )
 
@@ -85,7 +65,6 @@ res_col1, res_col2 = st.columns(2)
 res_col1.metric(
     "Sample Size",
     f"{n_two:,}",
-    help=f"Two-tailed α={alpha_percent}% power={power_percent}%"
 )
 
 res_col2.metric(
@@ -93,11 +72,51 @@ res_col2.metric(
     f"{n_two * 2:,}"
 )
 
+# Forecast and Cost Section
+st.markdown("---")
+st.subheader("Forecast & Cost Analysis")
+forecast_col1, forecast_col2 = st.columns(2)
+
+with forecast_col1:
+    forecast_impressions = st.number_input(
+        "Forecast Impression Sample Size",
+        min_value=0,
+        value=n_two * 2,
+        step=1000,
+    )
+
+with forecast_col2:
+    price_per_1000 = st.number_input(
+        "Price per 1,000 Impressions",
+        min_value=0.0,
+        value=5.0,
+        step=0.1,
+    )
+
+# Calculate costs
+total_cost = (forecast_impressions / 1000) * price_per_1000
+cost_per_group = total_cost / 2
+
+# Display cost metrics
+cost_col1, cost_col2, cost_col3 = st.columns(3)
+cost_col1.metric(
+    "Total Campaign Cost",
+    f"{total_cost:,.2f}"
+)
+cost_col2.metric(
+    "Cost per Group",
+    f"{cost_per_group:,.2f}"
+)
+cost_col3.metric(
+    "CPM",
+    f"{price_per_1000:.2f}"
+)
+
+
 # Effect size
 st.markdown("---")
-st.subheader("Selected Result")
+st.subheader("Calculations and models")
 effect_size_h = 2 * (np.arcsin(np.sqrt(p2)) - np.arcsin(np.sqrt(p1)))
-st.markdown(f"**Effect size (Cohen's h):** {effect_size_h:.4f}")
 
 with st.expander("Calculation details (formulas)"):
     st.markdown(f"""
