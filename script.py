@@ -5,7 +5,7 @@ from scipy import stats
 st.set_page_config(page_title="A/B Test Power Analysis (Pooled)", layout="wide")
 st.title("A/B Test Power Analysis Calculator")
 
-col1, col2 = st.columns([1,1])
+col1, col2 = st.columns([1,1], gap="small")
 
 with col1:
     st.subheader("🟩 Input Parameters")
