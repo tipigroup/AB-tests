@@ -51,6 +51,32 @@ st.markdown("""
 .roast-accent-header {
     border-left-color: var(--roast-accent);
 }
+/* =========================
+   STREAMLIT METRIC CARDS
+   ========================= */
+[data-testid="stMetric"] {
+    background: white !important;
+    border-radius: 10px !important;
+    padding: 20px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    border-left: 4px solid var(--roast-primary) !important;
+    margin-bottom: 20px !important;
+}
+
+/* Adjust label and value colors */
+[data-testid="stMetricLabel"] {
+    color: var(--roast-grey) !important;
+    text-transform: uppercase !important;
+    font-size: 0.9em !important;
+    letter-spacing: 0.5px !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--roast-dark) !important;
+    font-weight: 700 !important;
+    font-size: 2em !important;
+}
+
 
 /* =========================
    METRIC CARDS
