@@ -28,7 +28,7 @@ st.markdown("""
    SECTION HEADERS
    ========================= */
 .section-header {
-    background: --roast-yellow;
+    background: --roast-primary;
     border-radius: 10px;
     padding: 15px 20px;
     color: var(--roast-dark);
