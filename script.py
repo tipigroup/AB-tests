@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 from scipy import stats
 
-st.set_page_config(page_title="ROAST A/B Test Calculator", layout="wide")
+st.set_page_config(page_title="Power Analysis", layout="wide")
 
 # Custom CSS for ROAST branding
 st.markdown("""
@@ -12,6 +12,7 @@ st.markdown("""
    ========================= */
 :root {
     --roast-primary: #FF6B35;
+    --roast-yellow: #c4b029;
     --roast-dark: #1a1a1a;
     --roast-light: #f5f5f5;
     --roast-accent: #00D9FF;
@@ -27,7 +28,7 @@ st.markdown("""
    SECTION HEADERS
    ========================= */
 .section-header {
-    background: white;
+    background: roast-yellow;
     border-radius: 10px;
     padding: 15px 20px;
     color: var(--roast-dark);
@@ -279,15 +280,15 @@ with main_col1:
     cost_per_group = total_cost / 2
     
     cost_col1, cost_col2, descriptor = st.columns(3)
-    cost_col1.metric("Total Campaign Cost", f"${total_cost:,.2f}")
-    cost_col2.metric("Cost per Group", f"${cost_per_group:,.2f}")
+    cost_col1.metric("Total Campaign Cost", f"{total_cost:,.2f}")
+    cost_col2.metric("Cost per Group", f"{cost_per_group:,.2f}")
     descriptor.metric("Minimum Duration", "4-6 Weeks")
 
 # RIGHT COLUMN - Statistical Settings
 with main_col2:
     st.markdown('<div class="section-header roast-accent-header">Statistical Settings</div>', unsafe_allow_html=True)
     
-    st.info("These settings have been applied as defaults. Check with the data for any changes.")
+    st.info("These settings have been applied as defaults. Check with the data team for any changes.")
     
     alpha_percent = st.number_input(
         "Significance Level %",
@@ -366,7 +367,7 @@ with st.expander("Calculation methodology", expanded=False):
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666666; padding: 20px;'>
-    <p><strong>ROAST Performance Media</strong> | A/B Test Calculator</p>
+    <p><strong>ROAST Performance Media</strong> | Power Analysis</p>
     <p style='font-size: 0.9em;'>For support or questions about this program, contact the tooling team.</p>
 </div>
 """, unsafe_allow_html=True)
