@@ -56,7 +56,7 @@ st.markdown("""
    STREAMLIT METRIC CARDS
    ========================= */
 [data-testid="stMetric"] {
-    background: white !important;
+    background: var(--roast-primary) !important;
     border-radius: 10px !important;
     padding: 20px !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
@@ -73,7 +73,7 @@ st.markdown("""
 }
 
 [data-testid="stMetricValue"] {
-    color: var(--roast-primary) !important;
+    color: var(--roast-dark) !important;
     font-weight: 700 !important;
     font-size: 2em !important;
 }
