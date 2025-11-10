@@ -73,7 +73,7 @@ st.markdown("""
 }
 
 [data-testid="stMetricValue"] {
-    color: var(--roast-dark) !important;
+    color: var(--roast-primary) !important;
     font-weight: 700 !important;
     font-size: 2em !important;
 }
@@ -83,7 +83,7 @@ st.markdown("""
    METRIC CARDS
    ========================= */
 .metric-card {
-    background: var(--roast-primary);
+    background: white;
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
